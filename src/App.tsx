@@ -1,25 +1,58 @@
-import React from 'react';
-import logo from './logo.svg';
+import { Button, Col, Row } from 'antd';
+import WalletInfo from './components/walletInfo';
+import { useState, useCallback, useEffect } from 'react';
+import {
+  useWalletKit,
+  useSolana,
+  useConnectedWallet,
+} from '@gokiprotocol/walletkit';
+
 import './App.css';
 
 function App() {
+  // state: balance (type = number, default value = 0)
+  const [balance, setBalance] = useState<number>(0);
+
+  // Goki hooks
+  const wallet = useConnectedWallet();
+  const { connect } = useWalletKit();
+  const { disconnect, providerMut } = useSolana();
+
+  const fetchBalance = useCallback(async () => {
+    // TODO: fetch balance
+    if (wallet && providerMut) {
+      let balance = await providerMut.connection.getBalance(wallet.publicKey);
+      return setBalance(balance);
+    }
+    setBalance(0);
+  }, [providerMut, wallet]);
+
+  useEffect(() => {
+    fetchBalance();
+  }, [fetchBalance]);
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Row justify="center" className="mt-20">
+      <Col className="mb-10">
+        <WalletInfo
+          address={wallet?.publicKey.toBase58() || ''}
+          balance={balance}
+        />
+      </Col>
+      {/* Button connect wallet */}
+      <Col span={24} style={{ textAlign: 'center' }}>
+        {wallet ? (
+          <Button type="primary" onClick={disconnect}>
+            Disconnect
+          </Button>
+        ) : (
+          // Call connectWallet function when click Button
+          <Button type="primary" onClick={connect}>
+            Connect Wallet
+          </Button>
+        )}
+      </Col>
+    </Row>
   );
 }
 
